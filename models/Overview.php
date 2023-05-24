@@ -10,10 +10,10 @@ class Overview
         global $mysqli;
         $data = array();
 
-        $totalPenyewaan = array();
-        $totalKatalog = array();
-        $totalMember = array();
-        $totalPendapatan = array();
+        // $totalPenyewaan = array();
+        // $totalKatalog = array();
+        // $totalMember = array();
+        // $totalPendapatan = array();
 
         $resultTotalPenyewaan = mysqli_query($mysqli, "SELECT COUNT(id_peminjaman) AS totalSewa FROM rents");
         $resultTotallKatalog = mysqli_query($mysqli, "SELECT COUNT(id_produk) AS totalKatalog FROM products");

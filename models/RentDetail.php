@@ -31,6 +31,9 @@ class RentDetail
                     USING(id_produk)
                     WHERE id_peminjaman='$id'";
 
+        $resultMinDurasi = mysqli_query($mysqli, "SELECT MIN(durasi) AS min_durasi FROM rent_details WHERE id_peminjaman='$id'");
+        $min_durasi = mysqli_fetch_array($resultMinDurasi);
+
         $grandTotal = 0;
 
         $data = array();
@@ -49,6 +52,7 @@ class RentDetail
                 'message' => 'Get RentDetail ' . $id . ' Successfully.',
                 'data' => $data,
                 'grandTotal' => $grandTotal,
+                'min_durasi' => (int)$min_durasi['min_durasi'],
             );
         } else {
             $response = array(
@@ -82,6 +86,7 @@ class RentDetail
             //     "
             // );
 
+            //NOTE: untuk cek stock
             $stock = [];
             $newStock = 0;
             $cekStockQuery = "SELECT stock FROM products WHERE id_produk='$_POST[id_produk]'";
@@ -89,6 +94,7 @@ class RentDetail
             while ($row = mysqli_fetch_array($result)) {
                 $stock[] = $row;
             }
+            //NOTE: hitung stock baru
             $newStock = (int)$stock[0]['stock'] - (int)$_POST['jumlah'];
 
             if ($newStock >= 0) {
@@ -113,6 +119,11 @@ class RentDetail
                         'message' => 'RentDetail ' . $_POST['id_peminjaman'] . '=>' . $_POST['id_produk'] . ' Added Failed.'
                     );
                 }
+            } else {
+                $response = array(
+                    'status' => 0,
+                    'message' => 'Stock produk ' . $_POST['id_produk'] . ' tidak cukup!'
+                );
             }
         } else {
             $response = array(
@@ -164,24 +175,27 @@ class RentDetail
         echo json_encode($response);
     }
 
-    function delete_rent_detail($id_peminjaman, $id_produk)
+    function delete_rent_detail($id_peminjaman, $id_produk, $jml_produk)
     {
         global $mysqli;
 
 
-        // $stock = [];
-        // $newStock = 0;
-        // $cekStockQuery = "SELECT stock FROM products WHERE id_produk='$_POST[id_produk]'";
-        // $result = $mysqli->query($cekStockQuery);
-        // while ($row = mysqli_fetch_array($result)) {
-        //     $stock[] = $row;
-        // }
-        // $newStock = (int)$stock[0]['stock'] - (int)$_POST['jumlah'];
+        //NOTE: untuk cek stock
+        $stock = [];
+        $newStock = 0;
+        $cekStockQuery = "SELECT stock FROM products WHERE id_produk='$id_produk'";
+        $result = $mysqli->query($cekStockQuery);
+        while ($row = mysqli_fetch_array($result)) {
+            $stock[] = $row;
+        }
+        //NOTE: hitung stock baru
+        $newStock = (int)$stock[0]['stock'] + (int)$jml_produk;
 
 
 
         $query = "DELETE FROM rent_details WHERE id_peminjaman='$id_peminjaman' AND id_produk='$id_produk'";
         if (mysqli_query($mysqli, $query)) {
+            $updateStock = mysqli_query($mysqli, "UPDATE products SET stock = '$newStock' WHERE id_produk = '$id_produk'");
             $response = array(
                 'status' => 1,
                 'message' => 'RentDetail ' . $id_peminjaman . '=>' . $id_produk . ' Deleted Successfully.'

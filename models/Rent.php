@@ -150,11 +150,47 @@ class Rent
     function delete_rent($id)
     {
         global $mysqli;
+
+        // NOTE: ambil data id_produk
+        $getProductsQuery = "SELECT id_produk FROM rent_details WHERE id_peminjaman='$id'";
+        $product = '';
+        $getProductsResult = $mysqli->query($getProductsQuery);
+        while ($row = mysqli_fetch_array($getProductsResult)) {
+            $product = (string)$row['id_produk'];
+
+            //NOTE: untuk cek stock
+            $stock = [];
+            $newStock = 0;
+            $cekStockQuery = "SELECT stock FROM products WHERE id_produk='$product'";
+            $result = $mysqli->query($cekStockQuery);
+            while ($row = mysqli_fetch_array($result)) {
+                $stock[] = $row;
+            }
+
+            //NOTE: untuk cek jumlah
+            $jml = [];
+            $cekStockQuery = "SELECT jumlah FROM rent_details WHERE id_peminjaman='$id' AND id_produk='$product'";
+            $result = $mysqli->query($cekStockQuery);
+            while ($row = mysqli_fetch_array($result)) {
+                $jml[] = $row;
+            }
+
+            //NOTE: hitung stock baru
+            $newStock = (int)$stock[0]['stock'] + (int)$jml[0]['jumlah'];
+
+            //NOTE: update stock
+            $updateStock = mysqli_query($mysqli, "UPDATE products SET stock = '$newStock' WHERE id_produk = '$product'");
+        }
+
+
+        // NOTE: delete data rent
         $query = "DELETE FROM rents WHERE id_peminjaman='$id'";
+
         if (mysqli_query($mysqli, $query)) {
+
             $response = array(
                 'status' => 1,
-                'message' => 'Rent ' . $id . ' Deleted Successfully.'
+                'message' => 'Rent ' . $id . ' Deleted Successfully.',
             );
         } else {
             $response = array(

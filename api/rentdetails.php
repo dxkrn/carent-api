@@ -25,7 +25,8 @@ switch ($request_method) {
     case 'DELETE':
         $id_peminjaman = $_GET["id_peminjaman"];
         $id_produk = $_GET["id_produk"];
-        $rent_detail->delete_rent_detail($id_peminjaman, $id_produk);
+        $jumlah = $_GET["jumlah"];
+        $rent_detail->delete_rent_detail($id_peminjaman, $id_produk, $jumlah);
         break;
     default:
         // Invalid Request Method

@@ -56,6 +56,7 @@ class RentReturn
     public function insert_rent_return()
     {
         global $mysqli;
+
         $arrcheckpost = array(
             'id_peminjaman' => '',
             'tgl_kembali' => '',
@@ -77,9 +78,40 @@ class RentReturn
                 $ubahStatus = mysqli_query($mysqli, "UPDATE rents SET status = 'done' WHERE id_peminjaman = '$_POST[id_peminjaman]'");
                 if ($ubahStatus) {
 
+                    // NOTE: Update stock
+                    $getProductsQuery = "SELECT id_produk FROM rent_details WHERE id_peminjaman='$_POST[id_peminjaman]'";
+                    $product = '';
+                    $getProductsResult = $mysqli->query($getProductsQuery);
+                    while ($row = mysqli_fetch_array($getProductsResult)) {
+                        $product = (string)$row['id_produk'];
+
+                        //NOTE: untuk cek stock
+                        $stock = [];
+                        $newStock = 0;
+                        $cekStockQuery = "SELECT stock FROM products WHERE id_produk='$product'";
+                        $result = $mysqli->query($cekStockQuery);
+                        while ($row = mysqli_fetch_array($result)) {
+                            $stock[] = $row;
+                        }
+
+                        //NOTE: untuk cek jumlah
+                        $jml = [];
+                        $cekStockQuery = "SELECT jumlah FROM rent_details WHERE id_peminjaman='$_POST[id_peminjaman]' AND id_produk='$product'";
+                        $result = $mysqli->query($cekStockQuery);
+                        while ($row = mysqli_fetch_array($result)) {
+                            $jml[] = $row;
+                        }
+
+                        //NOTE: hitung stock baru
+                        $newStock = (int)$stock[0]['stock'] + (int)$jml[0]['jumlah'];
+
+                        //NOTE: update stock
+                        $updateStock = mysqli_query($mysqli, "UPDATE products SET stock = '$newStock' WHERE id_produk = '$product'");
+                    }
+
                     $response = array(
                         'status' => 1,
-                        'message' => 'RentReturn ' . $_POST['id_peminjaman'] . ' Added Successfully.'
+                        'message' => 'RentReturn ' . $_POST['id_peminjaman'] . ' Added Successfully.',
                     );
                 }
             } else {
@@ -140,13 +172,49 @@ class RentReturn
     function delete_rent_return($id)
     {
         global $mysqli;
+
+
+
+        // NOTE: Update stock
+        $getProductsQuery = "SELECT id_produk FROM rent_details WHERE id_peminjaman='$id'";
+        $product = '';
+        $getProductsResult = $mysqli->query($getProductsQuery);
+        while ($row = mysqli_fetch_array($getProductsResult)) {
+            $product = (string)$row['id_produk'];
+
+            //NOTE: untuk cek stock
+            $stock = [];
+            $newStock = 0;
+            $cekStockQuery = "SELECT stock FROM products WHERE id_produk='$product'";
+            $result = $mysqli->query($cekStockQuery);
+            while ($row = mysqli_fetch_array($result)) {
+                $stock[] = $row;
+            }
+
+            //NOTE: untuk cek jumlah
+            $jml = [];
+            $cekStockQuery = "SELECT jumlah FROM rent_details WHERE id_peminjaman='$id' AND id_produk='$product'";
+            $result = $mysqli->query($cekStockQuery);
+            while ($row = mysqli_fetch_array($result)) {
+                $jml[] = $row;
+            }
+
+            //NOTE: hitung stock baru
+            $newStock = (int)$stock[0]['stock'] - (int)$jml[0]['jumlah'];
+
+            //NOTE: update stock
+            $updateStock = mysqli_query($mysqli, "UPDATE products SET stock = '$newStock' WHERE id_produk = '$product'");
+        }
+
+        // NOTE: Delete data dari returns
         $query = "DELETE FROM rent_returns WHERE id_peminjaman='$id'";
         if (mysqli_query($mysqli, $query)) {
             $ubahStatus = mysqli_query($mysqli, "UPDATE rents SET status = 'ongoing' WHERE id_peminjaman = '$id'");
             if ($ubahStatus) {
                 $response = array(
                     'status' => 1,
-                    'message' => 'RentReturn ' . $id . ' Deleted Successfully.'
+                    'message' => 'RentReturn ' . $id . ' Deleted Successfully.',
+
                 );
             }
         } else {

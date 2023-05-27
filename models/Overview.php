@@ -9,6 +9,7 @@ class Overview
     {
         global $mysqli;
         $data = array();
+        $jmlPeminjaman = array();
 
         // $totalPenyewaan = array();
         // $totalKatalog = array();
@@ -30,7 +31,7 @@ class Overview
                                                         WHERE status='done'
                                                         "
         );
-
+        $resultTerlaris = mysqli_query($mysqli, "SELECT nama_produk, SUM(jumlah) AS jml_peminjaman FROM rent_details JOIN products USING(id_produk) GROUP BY id_produk ORDER BY(jml_peminjaman) DESC LIMIT 4");
 
         while ($row = mysqli_fetch_object($resultTotalPenyewaan)) {
             $data[] = $row;
@@ -47,6 +48,9 @@ class Overview
         while ($row = mysqli_fetch_object($resultTotalPendapatan)) {
             $data[] = $row;
         }
+        while ($row = mysqli_fetch_object($resultTerlaris)) {
+            $jmlPeminjaman[] = $row;
+        }
 
 
 
@@ -54,6 +58,7 @@ class Overview
             'status' => 1,
             'message' => 'Get List Brands Successfully.',
             'data' => $data,
+            'peminjaman' => $jmlPeminjaman,
         );
         echo json_encode($response);
     }
